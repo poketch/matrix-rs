@@ -9,7 +9,7 @@ pub struct Matrix {
 
 impl Matrix {
     //create
-    fn new(cells: Vec<Vec<isize>>) -> Self {
+    pub fn new(cells: Vec<Vec<isize>>) -> Self {
         let no_of_cols = cells[0].len();
 
         if !cells.iter().all(|col| col.len() == no_of_cols) {
@@ -22,13 +22,13 @@ impl Matrix {
         Matrix { cells }
     }
 
-    fn zeroes(rows: usize, cols: usize) -> Self {
+    pub fn zeroes(rows: usize, cols: usize) -> Self {
         Matrix {
             cells: vec![vec![0; cols]; rows],
         }
     }
 
-    fn from_list(rows: usize, cols: usize, list: Vec<isize>) -> Self {
+    pub fn from_list(rows: usize, cols: usize, list: Vec<isize>) -> Self {
         let size = rows * cols;
 
         if list.len() != size {
@@ -46,7 +46,7 @@ impl Matrix {
         mat
     }
 
-    fn from_matrix(_mat: Self, _rows: usize, _cols: usize) -> Self {
+    pub fn from_matrix(_mat: Self, _rows: usize, _cols: usize) -> Self {
         todo!()
     }
 }
@@ -106,7 +106,7 @@ impl Matrix {
 impl Matrix {
     // strassen algo
 
-    fn strass(&self, b: &Self) -> Self {
+    pub fn strass(&self, b: &Self) -> Self {
         let m1 = (self[[1, 1]] + self[[2, 2]]) * (b[[1, 1]] + b[[2, 2]]);
         let m2 = (self[[2, 1]] + self[[2, 2]]) * b[[1, 1]];
         let m3 = self[[1, 1]] * (b[[1, 2]] - b[[2, 2]]);
