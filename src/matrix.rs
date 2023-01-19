@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::ops::{Index, Mul};
+use std::ops::{Index, Mul, MulAssign};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Matrix {
@@ -103,16 +103,6 @@ impl Matrix {
     }
 }
 
-impl Index<[usize; 2]> for Matrix {
-    type Output = isize;
-
-    fn index(&self, index: [usize; 2]) -> &Self::Output {
-        let (row, col) = (index[0], index[1]);
-
-        &self.cells[row - 1][col - 1]
-    }
-}
-
 impl Matrix {
     // strassen algo
 
@@ -132,6 +122,16 @@ impl Matrix {
     }
 }
 
+impl Index<[usize; 2]> for Matrix {
+    type Output = isize;
+
+    fn index(&self, index: [usize; 2]) -> &Self::Output {
+        let (row, col) = (index[0], index[1]);
+
+        &self.cells[row - 1][col - 1]
+    }
+}
+
 impl Mul for Matrix {
     type Output = Self;
 
@@ -141,12 +141,20 @@ impl Mul for Matrix {
         for (i, row) in out.cells.iter_mut().enumerate() {
             for (j, cell) in row.iter_mut().enumerate() {
                 for idx in 1..=self.row_length() {
-                    *cell += self[[i+1, idx]] * b[[idx, j+1]]
+                    *cell += self[[i + 1, idx]] * b[[idx, j + 1]]
                 }
             }
         }
 
         out
+    }
+}
+
+impl MulAssign for Matrix {
+    fn mul_assign(&mut self, b: Self) {
+
+        let a = self.clone();
+        *self = a * b
     }
 }
 

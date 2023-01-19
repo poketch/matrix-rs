@@ -141,15 +141,18 @@ fn strass_mul() {
     let b = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
 
     let mat = Matrix::new(vec![vec![7, 10], vec![15, 22]]);
+
     assert_eq!(mat, a.strass(&b));
 }
 
 #[test]
-fn strass_indent_mul() {
+fn strass_ident_mul() {
     let a = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
     let b = Matrix::new(vec![vec![1, 0], vec![0, 1]]);
+    
+    let mat = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
 
-    assert_eq!(a, a.strass(&b));
+    assert_eq!(mat, a.strass(&b));
 }
 
 #[test]
@@ -162,9 +165,33 @@ fn mul() {
 }
 
 #[test]
-fn indent_mul() {
+fn ident_mul() {
     let a = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
     let b = Matrix::new(vec![vec![1, 0], vec![0, 1]]);
+    
+    let mat = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
 
-    assert_eq!(a.clone(), a * b);
+    assert_eq!(mat, a * b);
+}
+
+#[test]
+fn mul_assign() {
+    let mut a = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
+    let b = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
+    a  *= b;
+    
+    let mat = Matrix::new(vec![vec![7, 10], vec![15, 22]]);
+
+    assert_eq!(mat, a);
+}
+
+#[test]
+fn indent_mul_assign() {
+    let mut a = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
+    let b = Matrix::new(vec![vec![1, 0], vec![0, 1]]);
+    a *= b;
+    
+    let mat = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
+
+    assert_eq!(mat, a);
 }
