@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Matrix {
     cells: Vec<Vec<isize>>,
@@ -87,6 +89,40 @@ impl Matrix { //internal methods
         for row in self.cells.iter_mut() {
             row.truncate(new_cols)
         }
+    }
+
+}
+
+impl Index<[usize;2]> for Matrix {
+    
+    type Output = isize;
+
+    fn index(&self, index: [usize;2]) -> &Self::Output {
+        
+        let (row, col) = (index[0], index[1]);
+        
+        &self.cells[row-1][col-1]
+    }
+}
+
+impl Matrix  {// strassen algo
+
+    fn strass(&self, b: &Self) -> Self {
+
+        let m1 = (self[[1,1]] + self[[2,2]]) * (b[[1,1]] + b[[2,2]]);
+        let m2 = (self[[2,1]] + self[[2,2]]) * b[[1,1]];
+        let m3 = self[[1,1]] * (b[[1,2]] - b[[2,2]]);
+        let m4 = self[[2,2]] * (b[[2,1]] - b[[1,1]]);
+        let m5 = (self[[1,1]] + self[[1,2]]) * b[[2,2]];
+        let m6 = (self[[2,1]] - self[[1,1]]) * (b[[1,1]] + b[[1,2]]);
+        let m7 = (self[[1,2]] - self[[2,2]]) * (b[[2,1]] + b[[2,2]]);
+
+        Matrix::new(
+            vec![
+                vec![(m1 + m4 - m5 + m7), (m3 + m5)],
+                vec![(m2 + m4),(m1 - m2 + m3 + m6)]
+            ]
+        )
     }
 
 }
@@ -204,4 +240,53 @@ mod tests {
 
         assert_eq!(mat, result)
     }
+    
+    #[test]
+    fn index_2x2() {
+        
+        let mat = Matrix::new(vec![vec![1,2], vec![3,4]]);
+        
+        assert_eq!(1, mat[[1,1]]);
+        assert_eq!(2, mat[[1,2]]);
+        assert_eq!(3, mat[[2,1]]);
+        assert_eq!(4, mat[[2,2]]);
+    }
+
+    #[test]
+    fn index_3x3() {
+        
+        let mat = Matrix::new(vec![vec![1,2,3], vec![4,5,6], vec![7,8,9]]);
+        
+        assert_eq!(1, mat[[1,1]]);
+        assert_eq!(2, mat[[1,2]]);
+        assert_eq!(3, mat[[1,3]]);
+        assert_eq!(4, mat[[2,1]]);
+        assert_eq!(5, mat[[2,2]]);
+        assert_eq!(6, mat[[2,3]]);
+        assert_eq!(7, mat[[3,1]]);
+        assert_eq!(8, mat[[3,2]]);
+        assert_eq!(9, mat[[3,3]]);
+    }
+
+    #[test]
+    fn strass_mul() {
+
+        let a = Matrix::new(vec![vec![1,2], vec![3,4]]);
+        let b = Matrix::new(vec![vec![1,2], vec![3,4]]);
+        
+        let mat = Matrix::new(vec![vec![7,10], vec![15,22]]);
+        assert_eq!(mat, a.strass(&b));
+    }
+
+    #[test]
+    fn strass_indent_mul() {
+
+        let a = Matrix::new(vec![vec![1,2], vec![3,4]]);
+        let b = Matrix::new(vec![vec![1,0], vec![0,1]]);
+        
+        assert_eq!(a, a.strass(&b));
+    }
+
+
+
 }
