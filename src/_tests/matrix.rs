@@ -112,52 +112,43 @@ fn asymmetric_downsize_cols() {
 
 #[test]
 fn from_mat_2x2_3x3() {
+    let a = Matrix::from_list(2, 2, vec![1, 2, 3, 4]);
 
+    let mat = Matrix::from_list(3, 3, vec![1, 2, 0, 3, 4, 0, 0, 0, 0]);
 
-    let a = Matrix::from_list(2, 2, vec![1, 2, 3,4]);
-
-    let mat = Matrix::from_list(3, 3, vec![1,2, 0, 3, 4,0,0,0,0]);
-
-    let result = Matrix::from_matrix(3, 3, a);
+    let result = Matrix::from_matrix(3, 3, &a);
 
     assert_eq!(mat, result)
 }
 
 #[test]
 fn from_mat_3x3_2x2() {
+    let a = Matrix::from_list(3, 3, vec![1, 2, 0, 3, 4, 0, 0, 0, 0]);
+    let mat = Matrix::from_list(2, 2, vec![1, 2, 3, 4]);
 
-
-    let a = Matrix::from_list(3, 3, vec![1,2, 0, 3, 4,0,0,0,0]);
-    let mat = Matrix::from_list(2, 2, vec![1, 2, 3,4]);
-
-
-    let result = Matrix::from_matrix(2, 2, a);
+    let result = Matrix::from_matrix(2, 2, &a);
 
     assert_eq!(mat, result)
 }
 
 #[test]
 fn from_mat_2x2_2x1() {
+    let a = Matrix::from_list(2, 2, vec![1, 2, 3, 4]);
 
+    let mat = Matrix::from_list(2, 1, vec![1, 3]);
 
-    let a = Matrix::from_list(2, 2, vec![1, 2, 3,4]);
-
-    let mat = Matrix::from_list(2,1, vec![1,3]);
-
-    let result = Matrix::from_matrix(2, 1, a);
+    let result = Matrix::from_matrix(2, 1, &a);
 
     assert_eq!(mat, result)
 }
 
 #[test]
 fn from_mat_2x2_1x2() {
-
-
     let a = Matrix::from_list(2, 2, vec![1, 2, 3, 4]);
 
-    let mat = Matrix::from_list(1,2, vec![1,2]);
+    let mat = Matrix::from_list(1, 2, vec![1, 2]);
 
-    let result = Matrix::from_matrix(1, 2, a);
+    let result = Matrix::from_matrix(1, 2, &a);
 
     assert_eq!(mat, result)
 }
@@ -203,6 +194,67 @@ fn strass_ident_mul() {
     let b = Matrix::new(vec![vec![1, 0], vec![0, 1]]);
 
     let mat = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
+
+    assert_eq!(mat, a.strass(&b));
+}
+
+#[test]
+fn strass_mul_3x3() {
+    let a = Matrix::from_list(3, 3, (1..=9).collect());
+    let b = Matrix::from_list(3, 3, (1..=9).collect());
+
+    let mat = Matrix::from_list(
+        3,
+        3,
+        vec![
+            30, 36, 42, 66, 81, 96, 102, 126, 150
+        ],
+    );
+
+    assert_eq!(mat, a.strass(&b));
+}
+
+#[test]
+fn strass_ident_mul_3x3() {
+    let a = Matrix::from_list(3, 3, (1..=9).collect());
+    let b = Matrix::new(vec![
+        vec![1, 0, 0,],
+        vec![0, 1, 0,],
+        vec![0, 0, 1,],
+    ]);
+
+    let mat = Matrix::from_list(3, 3, (1..=9).collect());
+
+    assert_eq!(mat, a.strass(&b));
+}
+
+#[test]
+fn strass_mul_4x4() {
+    let a = Matrix::from_list(4, 4, (1..=16).collect());
+    let b = Matrix::from_list(4, 4, (1..=16).collect());
+
+    let mat = Matrix::from_list(
+        4,
+        4,
+        vec![
+            90, 100, 110, 120, 202, 228, 254, 280, 314, 356, 398, 440, 426, 484, 542, 600,
+        ],
+    );
+
+    assert_eq!(mat, a.strass(&b));
+}
+
+#[test]
+fn strass_ident_mul_4x4() {
+    let a = Matrix::from_list(4, 4, (1..=16).collect());
+    let b = Matrix::new(vec![
+        vec![1, 0, 0, 0],
+        vec![0, 1, 0, 0],
+        vec![0, 0, 1, 0],
+        vec![0, 0, 0, 1],
+    ]);
+
+    let mat = Matrix::from_list(4, 4, (1..=16).collect());
 
     assert_eq!(mat, a.strass(&b));
 }
@@ -282,4 +334,80 @@ fn indent_mul_assign() {
     let mat = Matrix::new(vec![vec![1, 2], vec![3, 4]]);
 
     assert_eq!(mat, a);
+}
+
+#[test]
+fn block_from_mat_4x4() {
+    let mat = Matrix::from_list(4, 4, (1..=16).collect());
+
+    let a = Blocks::from_matrix(mat);
+
+    let blk = Blocks {
+        mats: vec![
+            vec![
+                Matrix::from_list(2, 2, vec![1, 2, 5, 6]),
+                Matrix::from_list(2, 2, vec![3, 4, 7, 8]),
+            ],
+            vec![
+                Matrix::from_list(2, 2, vec![9, 10, 13, 14]),
+                Matrix::from_list(2, 2, vec![11, 12, 15, 16]),
+            ],
+        ],
+    };
+
+    assert_eq!(blk, a);
+}
+
+#[test]
+fn mat_from_block_4x4() {
+    let block = Blocks {
+        mats: vec![
+            vec![
+                Matrix::from_list(2, 2, vec![1, 2, 5, 6]),
+                Matrix::from_list(2, 2, vec![3, 4, 7, 8]),
+            ],
+            vec![
+                Matrix::from_list(2, 2, vec![9, 10, 13, 14]),
+                Matrix::from_list(2, 2, vec![11, 12, 15, 16]),
+            ],
+        ],
+    };
+
+    let a = Blocks::to_matrix(block);
+    let mat = Matrix::from_list(4, 4, (1..=16).collect());
+
+    assert_eq!(mat, a);
+}
+
+#[test]
+fn block_strass_4x4() {
+    let a = Blocks {
+        mats: vec![
+            vec![
+                Matrix::from_list(2, 2, vec![1, 2, 5, 6]),
+                Matrix::from_list(2, 2, vec![3, 4, 7, 8]),
+            ],
+            vec![
+                Matrix::from_list(2, 2, vec![9, 10, 13, 14]),
+                Matrix::from_list(2, 2, vec![11, 12, 15, 16]),
+            ],
+        ],
+    };
+
+    let b = a.clone();
+
+    let block = Blocks {
+        mats: vec![
+            vec![
+                Matrix::from_list(2, 2, vec![90, 100, 202, 228]),
+                Matrix::from_list(2, 2, vec![110, 120, 254, 280]),
+            ],
+            vec![
+                Matrix::from_list(2, 2, vec![314, 356, 426, 484]),
+                Matrix::from_list(2, 2, vec![398, 440, 542, 600]),
+            ],
+        ],
+    };
+
+    assert_eq!(block, a.strass(&b))
 }

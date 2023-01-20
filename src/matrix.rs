@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::ops::{Index, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Index, Mul, MulAssign};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Matrix {
@@ -31,7 +31,6 @@ impl Matrix {
     pub fn from_list(rows: usize, cols: usize, list: Vec<isize>) -> Self {
         let size = rows * cols;
 
-
         if list.len() != size {
             panic!("Error: creating Matrix `from_list` input vector does not match, desired matrix length")
         }
@@ -47,31 +46,29 @@ impl Matrix {
         mat
     }
 
-    pub fn from_matrix(rows: usize, cols: usize, mat: Self) -> Self {
-        
+    pub fn from_matrix(rows: usize, cols: usize, mat: &Self) -> Self {
         let mut out = mat.clone();
 
-        let upsize_rows = rows >= mat.rows(); 
-        let upsize_cols = cols >= mat.cols(); 
-        
+        let upsize_rows = rows >= mat.rows();
+        let upsize_cols = cols >= mat.cols();
+
         match (upsize_rows, upsize_cols) {
-            
             (true, true) => {
                 out.upsize(rows, cols);
-            },
+            }
             (true, false) => {
                 out.upsize(rows, out.cols());
                 out.downsize(out.rows(), cols);
-            },
+            }
             (false, true) => {
                 out.downsize(rows, out.cols());
                 out.upsize(out.rows(), cols);
-            },
+            }
             (false, false) => {
                 out.downsize(rows, cols);
-            },
+            }
         }
-        
+
         out
     }
 }
@@ -129,9 +126,37 @@ impl Matrix {
 }
 
 impl Matrix {
-    // strassen algo
+    // strass algo
 
     pub fn strass(&self, b: &Self) -> Self {
+        if self.rows() == b.rows()
+            && self.rows() == 2
+            && self.cols() == b.cols()
+            && self.cols() == 2
+        {
+            return self.strass_inner(&b);
+        }
+
+        let (out_dim_rows, out_dim_cols) = (self.rows(), b.cols());
+
+        // find the closest multiple of two
+        let size = self.rows().max(self.cols()).max(b.rows()).max(b.cols());
+        let size = if size % 2 == 0 { size } else { size + 1 };
+
+        let a = Matrix::from_matrix(size, size, self);
+        let b = Matrix::from_matrix(size, size, b);
+
+        let a = Blocks::from_matrix(a);
+        let b = Blocks::from_matrix(b);
+
+        let block = a.strass(&b);
+        let res = block.to_matrix();
+
+        Matrix::from_matrix(out_dim_rows, out_dim_cols, &res)
+    }
+
+    pub fn strass_inner(&self, b: &Self) -> Self {
+        // perform strass_inner algorithm on 2x2 matrix
         let m1 = (self[[1, 1]] + self[[2, 2]]) * (b[[1, 1]] + b[[2, 2]]);
         let m2 = (self[[2, 1]] + self[[2, 2]]) * b[[1, 1]];
         let m3 = self[[1, 1]] * (b[[1, 2]] - b[[2, 2]]);
@@ -182,7 +207,131 @@ impl Mul for Matrix {
 impl MulAssign for Matrix {
     fn mul_assign(&mut self, b: Self) {
         let a = self.clone();
-        *self = a * b
+        *self = a * b;
+    }
+}
+
+impl Add for Matrix {
+    type Output = Self;
+
+    fn add(self, b: Self) -> Self::Output {
+        if self.rows() != b.cols() || self.cols() != b.cols() {
+            panic!(
+                "Matrices must be of the smae size to add. Found {} x {} + {} x {}",
+                self.rows(),
+                self.cols(),
+                b.rows(),
+                b.cols()
+            );
+        }
+
+        let mut out = Self::zeroes(self.rows(), self.cols());
+
+        for (r, row) in out.cells.iter_mut().enumerate() {
+            for (c, cell) in row.iter_mut().enumerate() {
+                *cell = self[[r + 1, c + 1]] + b[[r + 1, c + 1]];
+            }
+        }
+
+        out
+    }
+}
+
+impl AddAssign for Matrix {
+    fn add_assign(&mut self, b: Self) {
+        let a = self.clone();
+        *self = a + b;
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Blocks {
+    // struct to handle Matrix Block Multiplication
+    mats: Vec<Vec<Matrix>>,
+}
+
+impl Blocks {
+    fn zeroes(rows: usize, cols: usize) -> Self {
+        Blocks {
+            mats: vec![vec![Matrix::zeroes(2, 2); cols]; rows],
+        }
+    }
+
+    fn rows(&self) -> usize {
+        self.mats.len()
+    }
+
+    fn cols(&self) -> usize {
+        self.mats[0].len()
+    }
+
+    pub fn from_matrix(mat: Matrix) -> Self {
+        //this assumes the matrix is of dimensions 2n x 2m
+
+        let mut out = Blocks::zeroes(mat.rows() / 2, mat.cols() / 2);
+
+        for (r, row) in out.mats.iter_mut().enumerate() {
+            let mat_row_index = 2 * (r + 1);
+
+            for (c, cell) in row.iter_mut().enumerate() {
+                let mat_col_index = 2 * (c + 1);
+
+                *cell = Matrix::new(vec![
+                    vec![
+                        mat[[mat_row_index - 1, mat_col_index - 1]],
+                        mat[[mat_row_index - 1, mat_col_index]],
+                    ],
+                    vec![
+                        mat[[mat_row_index, mat_col_index - 1]],
+                        mat[[mat_row_index, mat_col_index]],
+                    ],
+                ])
+            }
+        }
+
+        out
+    }
+}
+
+impl Blocks {
+    pub fn to_matrix(self) -> Matrix {
+        let (out_rows, out_cols) = (self.rows() * 2, self.cols() * 2);
+
+        let mut out = Matrix::zeroes(out_rows, out_cols);
+
+        for (r, row) in out.cells.iter_mut().enumerate() {
+            for (c, cell) in row.iter_mut().enumerate() {
+                let mat_row_idx = if (r) % 2 == 0 { 1 } else { 2 };
+                let mat_col_idx = if (c) % 2 == 0 { 1 } else { 2 };
+
+                *cell = self[[(r / 2) + 1, (c / 2) + 1]][[mat_row_idx, mat_col_idx]];
+            }
+        }
+        out
+    }
+
+    pub fn strass(&self, b: &Self) -> Self {
+        let mut out = Blocks::zeroes(self.rows(), self.cols());
+
+        for (r, row) in out.mats.iter_mut().enumerate() {
+            for (c, cell) in row.iter_mut().enumerate() {
+                for idx in 1..=self.cols() {
+                    *cell += self[[r + 1, idx]].strass_inner(&b[[idx, c + 1]]);
+                }
+            }
+        }
+
+        out
+    }
+}
+
+impl Index<[usize; 2]> for Blocks {
+    type Output = Matrix;
+
+    fn index(&self, index: [usize; 2]) -> &Self::Output {
+        let (row, col) = (index[0], index[1]);
+
+        &self.mats[row - 1][col - 1]
     }
 }
 
