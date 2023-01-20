@@ -31,6 +31,7 @@ impl Matrix {
     pub fn from_list(rows: usize, cols: usize, list: Vec<isize>) -> Self {
         let size = rows * cols;
 
+
         if list.len() != size {
             panic!("Error: creating Matrix `from_list` input vector does not match, desired matrix length")
         }
@@ -46,8 +47,32 @@ impl Matrix {
         mat
     }
 
-    pub fn from_matrix(_mat: Self, _rows: usize, _cols: usize) -> Self {
-        todo!()
+    pub fn from_matrix(rows: usize, cols: usize, mat: Self) -> Self {
+        
+        let mut out = mat.clone();
+
+        let upsize_rows = rows >= mat.rows(); 
+        let upsize_cols = cols >= mat.cols(); 
+        
+        match (upsize_rows, upsize_cols) {
+            
+            (true, true) => {
+                out.upsize(rows, cols);
+            },
+            (true, false) => {
+                out.upsize(rows, out.cols());
+                out.downsize(out.rows(), cols);
+            },
+            (false, true) => {
+                out.downsize(rows, out.cols());
+                out.upsize(out.rows(), cols);
+            },
+            (false, false) => {
+                out.downsize(rows, cols);
+            },
+        }
+        
+        out
     }
 }
 
@@ -94,12 +119,12 @@ impl Matrix {
         }
     }
 
-    fn row_length(&self) -> usize {
-        self.cells[0].len()
+    fn rows(&self) -> usize {
+        self.cells.len()
     }
 
-    fn col_length(&self) -> usize {
-        self.cells.len()
+    fn cols(&self) -> usize {
+        self.cells[0].len()
     }
 }
 
@@ -136,12 +161,16 @@ impl Mul for Matrix {
     type Output = Self;
 
     fn mul(self, b: Self) -> Self::Output {
-        let mut out = Matrix::zeroes(2, 2);
+        if self.cols() != b.rows() {
+            panic!("Matrix multiplaicaton only allowed for r x m and m x c matrices to form r x c matrix.\n Found {} x {} and {} x {} matrices", self.rows(), self.cols(), b.rows(), b.cols())
+        }
 
-        for (i, row) in out.cells.iter_mut().enumerate() {
-            for (j, cell) in row.iter_mut().enumerate() {
-                for idx in 1..=self.row_length() {
-                    *cell += self[[i + 1, idx]] * b[[idx, j + 1]]
+        let mut out = Matrix::zeroes(self.rows(), b.cols());
+
+        for (r, row) in out.cells.iter_mut().enumerate() {
+            for (c, cell) in row.iter_mut().enumerate() {
+                for idx in 1..=self.cols() {
+                    *cell += self[[r + 1, idx]] * b[[idx, c + 1]];
                 }
             }
         }
@@ -152,7 +181,6 @@ impl Mul for Matrix {
 
 impl MulAssign for Matrix {
     fn mul_assign(&mut self, b: Self) {
-
         let a = self.clone();
         *self = a * b
     }
